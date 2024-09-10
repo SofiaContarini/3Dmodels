@@ -11,9 +11,27 @@
       canvas {
         display: block;
       }
+      /* Stile della scritta di caricamento */
+      #loadingScreen {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #000;
+        color: #fff;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 2em;
+        z-index: 1000;
+      }
     </style>
   </head>
   <body>
+    <!-- Scritta di caricamento -->
+    <div id="loadingScreen">Loading 3D Model...</div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.135.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.135.0/examples/js/controls/OrbitControls.js"></script>
@@ -38,11 +56,6 @@
       const ambientLight = new THREE.AmbientLight(0xffff99, 50);
       scene.add(ambientLight);
 
-      // Aggiungi una luce direzionale
-      // const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-      // directionalLight.position.set(500, 500, 500);
-      // scene.add(directionalLight);
-
       const loader = new THREE.GLTFLoader();
       let model;
 
@@ -51,7 +64,7 @@
         function (gltf) {
           // Itera sui nodi del modello per trovare la sfera centrale
           gltf.scene.traverse(function (node) {
-            console.log(node.name);
+            //console.log(node.name);
             if (node.isMesh && node.name !== "black_hole_black_hole_center_0") {
               node.material.emissive = new THREE.Color(0xffff99); // Imposta l'emissività
               node.material.emissiveIntensity = 0.3; // Aumenta l'intensità dell'emissività
@@ -61,17 +74,12 @@
           model.position.set(0, 0, 0);
           model.rotation.z -= 3.14 / 8;
 
-          const box = new THREE.Box3().setFromObject(gltf.scene);
-          const boxSize = box.getSize(new THREE.Vector3()).length();
-          const boxCenter = box.getCenter(new THREE.Vector3());
-
-          // Aggiungi una PointLight giallastra
-          const pointLight = new THREE.PointLight(0xffa542, 500000, boxSize); // Colore giallo chiaro, intensità 10, distanza 100
-          pointLight.position.set(0, 0, 0); // Posiziona la luce al centro della scena
-          scene.add(pointLight);
-
           // Aggiungi il modello alla scena
           scene.add(model);
+
+          const box = new THREE.Box3().setFromObject(model);
+          const boxSize = box.getSize(new THREE.Vector3()).length();
+          const boxCenter = box.getCenter(new THREE.Vector3());
 
           // Posiziona la telecamera ad una distanza che permetta di vedere tutto l'oggetto
           camera.position.x = 0;
@@ -80,9 +88,22 @@
           camera.lookAt(boxCenter);
 
           controls.target.copy(boxCenter);
+
+          // Ritarda la scomparsa della scritta di caricamento
+          setTimeout(function () {
+            document.getElementById("loadingScreen").style.display = "none";
+          }, 2000);
         },
-        undefined
+        undefined,
+        function (error) {
+          console.error(error);
+        }
       );
+
+      // Aggiungi una PointLight giallastra
+      const pointLight = new THREE.PointLight(0xffa542, 500000, 10000); // Colore giallo chiaro, intensità 10, distanza 100
+      pointLight.position.set(0, 0, 0); // Posiziona la luce al centro della scena
+      scene.add(pointLight);
 
       function animate() {
         requestAnimationFrame(animate);
