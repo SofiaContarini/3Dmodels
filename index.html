@@ -35,13 +35,21 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.135.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.135.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/Pass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+
     <script>
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(
-        75,
+        50,
         window.innerWidth / window.innerHeight,
-        0.1,
-        10000
+        0.01,
+        50000
       );
       const renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
@@ -49,30 +57,65 @@
       renderer.physicallyCorrectLights = true;
       document.body.appendChild(renderer.domElement);
 
+      // Load star texture and create background
+      const loader_bkg = new THREE.TextureLoader();
+      loader_bkg.load("2k_stars_milky_way.jpg", function (texture) {
+        const starGeometry = new THREE.SphereGeometry(10000, 64, 64);
+        const starMaterial = new THREE.MeshBasicMaterial({
+          map: texture,
+          side: THREE.BackSide, // This ensures the texture is visible from the inside
+        });
+        const starMesh = new THREE.Mesh(starGeometry, starMaterial);
+        scene.add(starMesh);
+      });
+
       const controls = new THREE.OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
 
       // Aggiungi una luce ambientale più forte
-      const ambientLight = new THREE.AmbientLight(0xffff99, 50);
+      const ambientLight = new THREE.AmbientLight(0xffffff, 10);
       scene.add(ambientLight);
 
       const loader = new THREE.GLTFLoader();
-      let model;
+      let model, composer;
 
       loader.load(
         "models/black_hole.glb",
         function (gltf) {
           // Itera sui nodi del modello per trovare la sfera centrale
           gltf.scene.traverse(function (node) {
-            //console.log(node.name);
-            if (node.isMesh && node.name !== "black_hole_black_hole_center_0") {
-              node.material.emissive = new THREE.Color(0xffff99); // Imposta l'emissività
-              node.material.emissiveIntensity = 0.3; // Aumenta l'intensità dell'emissività
+            console.log(node.name);
+            if (node.isMesh && node.name == "black_hole_ring_ring_0") {
+              node.material.emissive = new THREE.Color(0xffff99);
+              node.material.emissiveIntensity = 0.3;
+              node.material.transparent = true;
+              node.material.opacity = 0.3;
+            }
+            if (node.isMesh && node.name == "black_hole_ring_ring2_0") {
+              node.material.transparent = true;
+              node.material.opacity = 0.3;
+            }
+            if (node.isMesh && node.name == "black_hole_black_hole_light1_0") {
+              node.material.transparent = true;
+              node.material.opacity = 0.2;
+            }
+            if (node.isMesh && node.name == "black_hole_black_hole_light2_0") {
+              node.material.transparent = true;
+              node.material.opacity = 0.2;
+            }
+            if (node.isMesh && node.name == "black_hole_black_hole_light3_0") {
+              node.material.transparent = true;
+              node.material.opacity = 0.8;
             }
           });
           model = gltf.scene;
           model.position.set(0, 0, 0);
           model.rotation.z -= 3.14 / 8;
+
+          // Configura il post-processing (EffectComposer e Bloom Pass)
+          composer = new THREE.EffectComposer(renderer);
+          const renderPass = new THREE.RenderPass(scene, camera);
+          composer.addPass(renderPass);
 
           // Aggiungi il modello alla scena
           scene.add(model);
@@ -83,9 +126,9 @@
 
           // Posiziona la telecamera ad una distanza che permetta di vedere tutto l'oggetto
           camera.position.x = 0;
-          camera.position.y = 50;
-          camera.position.z = 1800;
-          camera.lookAt(boxCenter);
+          camera.position.y = 200;
+          camera.position.z = 1200;
+          //camera.lookAt(boxCenter);
 
           controls.target.copy(boxCenter);
 
@@ -101,16 +144,19 @@
       );
 
       // Aggiungi una PointLight giallastra
-      const pointLight = new THREE.PointLight(0xffa542, 500000, 10000); // Colore giallo chiaro, intensità 10, distanza 100
+      const pointLight = new THREE.PointLight(0xffa542, 100000, 5000); // Colore giallo chiaro, intensità 10, distanza 100
       pointLight.position.set(0, 0, 0); // Posiziona la luce al centro della scena
       scene.add(pointLight);
 
       function animate() {
         requestAnimationFrame(animate);
         if (model) {
-          model.rotation.y += 0.002; // Ruota intorno all'asse Y
+          model.rotation.y += 0.0015; // Ruota intorno all'asse Y
         }
         controls.update();
+        camera.lookAt(new THREE.Vector3(0, -100, -100));
+        camera.rotation.y = -3.14 / 5;
+        camera.rotation.z = 3.14 / 10;
         renderer.render(scene, camera);
       }
       animate();
