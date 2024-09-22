@@ -48,7 +48,7 @@
       const camera = new THREE.PerspectiveCamera(
         50,
         window.innerWidth / window.innerHeight,
-        0.01,
+        1,
         50000
       );
       const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -155,7 +155,7 @@
         }
         controls.update();
         camera.lookAt(new THREE.Vector3(0, -100, -100));
-        camera.rotation.y = -3.14 / 5;
+        camera.rotation.y = -3.14 / 8;
         camera.rotation.z = 3.14 / 10;
         renderer.render(scene, camera);
       }
